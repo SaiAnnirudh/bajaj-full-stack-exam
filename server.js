@@ -20,24 +20,21 @@ app.post('/bfhl', (req, res) => {
         const duplicate_edges = [];
         const seenEdges = new Set();
         
-        const adj = {};       // Adjacency list for graph
-        const inDegree = {};  // To track incoming edges
-        const parentMap = {}; // Enforces the multi-parent rule
+        const adj = {};
+        const inDegree = {};
+        const parentMap = {};
         const allNodes = new Set();
 
-        // 1. Parse Input & Apply Rules 
         data.forEach(item => {
             if (typeof item !== 'string') return;
             const edge = item.trim();
 
-            // Validate format: single uppercase letter -> single uppercase letter [cite: 37]
-            // Rejects "hello", "1->2", "A->", "A->A" (self-loops) [cite: 39]
+           
             if (!/^[A-Z]->[A-Z]$/.test(edge) || edge === edge[3]) {
                 invalid_entries.push(edge);
                 return;
             }
 
-            // Duplicate Edge Rule [cite: 40-43]
             if (seenEdges.has(edge)) {
                 duplicate_edges.push(edge);
                 return;
@@ -47,10 +44,8 @@ app.post('/bfhl', (req, res) => {
             const parent = edge;
             const child = edge[3];
 
-            // Multi-parent rule: first parent wins, rest silently discarded 
             if (parentMap[child]) return; 
             
-            // Build Graph
             parentMap[child] = parent;
             if (!adj[parent]) adj[parent] = [];
             adj[parent].push(child);
@@ -67,7 +62,6 @@ app.post('/bfhl', (req, res) => {
         let total_trees = 0;
         let total_cycles = 0;
 
-        // DFS function to recursively build the nested tree object
         const buildTree = (node) => {
             visited.add(node);
             const treeObj = {};
@@ -80,12 +74,10 @@ app.post('/bfhl', (req, res) => {
                     maxDepth = Math.max(maxDepth, childResult.maxDepth);
                 }
             }
-            // Depth is nodes on longest path. A single node has depth 1. [cite: 58]
             return { tree: treeObj, maxDepth: maxDepth + 1 }; 
         };
 
-        // 2. Identify Trees from valid roots [cite: 47]
-        // Sort alphabetically to handle lexicographical tiebreakers natively [cite: 62]
+
         const sortedNodes = Array.from(allNodes).sort();
         
         sortedNodes.forEach(node => {
@@ -100,11 +92,9 @@ app.post('/bfhl', (req, res) => {
             }
         });
 
-        // 3. Identify Pure Cycles [cite: 50]
-        // Any unvisited nodes left over must be part of a pure cycle.
+
         sortedNodes.forEach(node => {
             if (!visited.has(node)) {
-                // Find all nodes in this isolated cyclic component
                 let curr = node;
                 const cycleComponent = [];
                 while (!visited.has(curr)) {
@@ -113,18 +103,16 @@ app.post('/bfhl', (req, res) => {
                     curr = adj[curr] ? adj[curr] : null; 
                 }
                 
-                // Lexicographically smallest node is the root [cite: 50]
                 cycleComponent.sort();
                 hierarchies.push({
                     root: cycleComponent,
-                    tree: {}, // Empty tree for cycles [cite: 54]
+                    tree: {},
                     has_cycle: true
                 });
                 total_cycles++;
             }
         });
 
-        // 4. Summary Calculation [cite: 60-63]
         let largest_tree_root = null;
         let max_depth = 0;
 
@@ -134,7 +122,6 @@ app.post('/bfhl', (req, res) => {
                     max_depth = h.depth;
                     largest_tree_root = h.root;
                 } else if (h.depth === max_depth && max_depth > 0) {
-                    // Tiebreaker: Lexicographically smaller root [cite: 62]
                     if (!largest_tree_root || h.root < largest_tree_root) {
                         largest_tree_root = h.root;
                     }
@@ -142,7 +129,6 @@ app.post('/bfhl', (req, res) => {
             }
         });
 
-        // 5. Construct Final Response [cite: 14]
         res.status(200).json({
             user_id: USER_ID,
             email_id: EMAIL_ID,
