@@ -29,7 +29,6 @@ app.post('/bfhl', (req, res) => {
             if (typeof item !== 'string') return;
             const edge = item.trim();
 
-           
             if (!/^[A-Z]->[A-Z]$/.test(edge) || edge === edge[3]) {
                 invalid_entries.push(edge);
                 return;
@@ -44,7 +43,7 @@ app.post('/bfhl', (req, res) => {
             const parent = edge;
             const child = edge[3];
 
-            if (parentMap[child]) return; 
+            if (parentMap[child]) return;
             
             parentMap[child] = parent;
             if (!adj[parent]) adj[parent] = [];
@@ -68,15 +67,15 @@ app.post('/bfhl', (req, res) => {
             let maxDepth = 0;
 
             if (adj[node]) {
-                for (const child of adj[node]) {
+                const sortedChildren = [...adj[node]].sort();
+                for (const child of sortedChildren) {
                     const childResult = buildTree(child);
                     treeObj[child] = childResult.tree;
                     maxDepth = Math.max(maxDepth, childResult.maxDepth);
                 }
             }
-            return { tree: treeObj, maxDepth: maxDepth + 1 }; 
+            return { tree: treeObj, maxDepth: maxDepth + 1 };
         };
-
 
         const sortedNodes = Array.from(allNodes).sort();
         
@@ -92,7 +91,6 @@ app.post('/bfhl', (req, res) => {
             }
         });
 
-
         sortedNodes.forEach(node => {
             if (!visited.has(node)) {
                 let curr = node;
@@ -100,7 +98,7 @@ app.post('/bfhl', (req, res) => {
                 while (!visited.has(curr)) {
                     visited.add(curr);
                     cycleComponent.push(curr);
-                    curr = adj[curr] ? adj[curr] : null; 
+                    curr = adj[curr] ? adj[curr] : null;
                 }
                 
                 cycleComponent.sort();
@@ -150,4 +148,4 @@ app.post('/bfhl', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`API running on port ${PORT}`));
